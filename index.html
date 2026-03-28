@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Owl Tracker">
+<meta name="theme-color" content="#080812">
+<link rel="manifest" href="manifest.json">
+<title>🦉 Pokémon Owl Tracker</title>
+<style>
+:root {
+  --bg:      #080812;
+  --s1:      #0f0f1e;
+  --s2:      #16162a;
+  --s3:      #1e1e38;
+  --border:  #2a2a50;
+  --border2: #3a3a68;
+  --text:    #e8e8f8;
+  --text2:   #8888b0;
+  --text3:   #4a4a78;
+  --gold:    #f0c040;
+  --gold2:   #c09020;
+  --purple:  #9060e0;
+  --purple2: #6040b0;
+  --green:   #30d080;
+  --green2:  #1a8050;
+  --red:     #e05050;
+  --blue:    #4090f0;
+  --amber:   #e09030;
+  --teal:    #30c0c0;
+  --pink:    #e060a0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);overscroll-behavior:none}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text)}
+
+/* ── SET SWITCHER ─────────────────────────── */
+.set-nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(8,8,18,0.97);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding-top:env(safe-area-inset-top);
+}
+.set-tabs{
+  display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.set-tabs::-webkit-scrollbar{display:none}
+.set-tab{
+  flex-shrink:0;display:flex;flex-direction:column;align-items:center;
+  padding:10px 16px 8px;border:none;background:none;cursor:pointer;
+  border-bottom:3px solid transparent;transition:all 0.2s;
+  min-width:80px;
+}
+.set-tab .tab-icon{font-size:20px;margin-bottom:3px}
+.set-tab .tab-label{font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3)}
+.set-tab.active .tab-label{color:var(--gold)}
+.set-tab.active{border-bottom-color:var(--gold)}
+.set-tab.t-noctowl.active{border-bottom-color:#9060e0}
+.set-tab.t-noctowl.active .tab-label{color:#9060e0}
+.set-tab.t-hoothoot.active{border-bottom-color:var(--teal)}
+.set-tab.t-hoothoot.active .tab-label{color:var(--teal)}
+.set-tab.t-surfing.active{border-bottom-color:var(--blue)}
+.set-tab.t-surfing.active .tab-label{color:var(--blue)}
+.set-tab.t-cameo.active{border-bottom-color:var(--pink)}
+.set-tab.t-cameo.active .tab-label{color:var(--pink)}
+
+/* ── SET HEADER ───────────────────────────── */
+.set-header{
+  background:linear-gradient(135deg,var(--s1),var(--s2));
+  padding:14px 16px 10px;border-bottom:1px solid var(--border);
+}
+.set-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.set-title{font-size:16px;font-weight:800;letter-spacing:-0.3px}
+.set-title.c-noctowl{background:linear-gradient(135deg,#9060e0,#f0c040);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.set-title.c-hoothoot{background:linear-gradient(135deg,#30c0c0,#90e0e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.set-title.c-surfing{background:linear-gradient(135deg,#4090f0,#30d0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.set-title.c-cameo{background:linear-gradient(135deg,#e060a0,#f0c040);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.set-pct{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(240,192,64,0.1);color:var(--gold);border:1px solid rgba(240,192,64,0.25)}
+
+.stat-pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.stat-pills::-webkit-scrollbar{display:none}
+.stat-pill{flex-shrink:0;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;text-align:center}
+.sp-val{font-size:13px;font-weight:700;color:var(--gold)}
+.sp-lab{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px}
+
+.prog-bar-wrap{margin-top:10px}
+.prog-info{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:5px}
+.prog-track{height:4px;background:var(--s3);border-radius:2px}
+.prog-fill{height:100%;border-radius:2px;transition:width 0.4s;box-shadow:0 0 6px currentColor}
+.prog-fill.c-noctowl{background:linear-gradient(90deg,#6040b0,#f0c040);box-shadow:0 0 6px rgba(144,96,224,0.5)}
+.prog-fill.c-hoothoot{background:linear-gradient(90deg,#20a0a0,#90e0e0);box-shadow:0 0 6px rgba(48,192,192,0.4)}
+.prog-fill.c-surfing{background:linear-gradient(90deg,#2060c0,#30d0ff);box-shadow:0 0 6px rgba(64,144,240,0.4)}
+.prog-fill.c-cameo{background:linear-gradient(90deg,#a04070,#f0c040);box-shadow:0 0 6px rgba(224,96,160,0.4)}
+
+/* ── FILTERS ──────────────────────────────── */
+.filter-row{
+  display:flex;background:var(--s1);border-bottom:1px solid var(--border);
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.filter-row::-webkit-scrollbar{display:none}
+.filter-btn{
+  flex-shrink:0;padding:8px 12px;font-size:11px;font-weight:700;
+  color:var(--text3);border:none;background:none;border-bottom:2px solid transparent;
+  cursor:pointer;white-space:nowrap;letter-spacing:0.03em;
+}
+.filter-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+.search-wrap{padding:8px 12px;background:var(--s1);border-bottom:1px solid var(--border)}
+.search-input{
+  width:100%;padding:8px 12px;border-radius:8px;
+  border:1px solid var(--border2);background:var(--s2);
+  font-size:14px;color:var(--text);outline:none;
+}
+.search-input::placeholder{color:var(--text3)}
+.search-input:focus{border-color:var(--purple)}
+
+/* ── CARD LIST ────────────────────────────── */
+.card-list{padding:6px 10px 130px}
+.section-lbl{
+  padding:12px 4px 5px;font-size:10px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);
+  display:flex;align-items:center;gap:8px;
+}
+.section-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── CARD ROW ─────────────────────────────── */
+.card-row{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:12px;margin-bottom:7px;cursor:pointer;overflow:hidden;
+  position:relative;transition:border-color 0.15s,background 0.15s;
+}
+.card-row:active{transform:scale(0.99)}
+.card-row.collected{background:rgba(48,208,128,0.06);border-color:rgba(48,208,128,0.25)}
+.card-row.special{border-color:rgba(240,192,64,0.3)}
+.card-row.special::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.card-inner{display:flex;align-items:center;gap:10px;padding:9px 12px}
+.card-img-wrap{
+  width:50px;height:70px;flex-shrink:0;border-radius:5px;overflow:hidden;
+  border:1px solid var(--border2);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;
+}
+.card-img{width:100%;height:100%;object-fit:cover;display:block}
+.no-img{font-size:24px;opacity:0.4}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-row.collected .card-name{text-decoration:line-through;color:var(--text3)}
+.card-set{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-num{font-size:10px;color:var(--text3);margin-top:1px}
+.card-price{font-size:12px;font-weight:700;color:var(--green);margin-top:4px}
+.badges{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
+.badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase}
+.b-rare{background:rgba(240,192,64,0.15);color:var(--gold);border:1px solid rgba(240,192,64,0.3)}
+.b-promo{background:rgba(144,96,224,0.15);color:#b080f0;border:1px solid rgba(144,96,224,0.3)}
+.b-jp{background:rgba(64,144,240,0.15);color:#70a0f0;border:1px solid rgba(64,144,240,0.3)}
+.b-en{background:rgba(48,208,128,0.12);color:#40c080;border:1px solid rgba(48,208,128,0.3)}
+.b-1st{background:rgba(224,80,80,0.15);color:#e07070;border:1px solid rgba(224,80,80,0.3)}
+.b-cameo{background:rgba(224,96,160,0.15);color:#e080c0;border:1px solid rgba(224,96,160,0.3)}
+.b-vmax{background:rgba(200,80,200,0.15);color:#d080d0;border:1px solid rgba(200,80,200,0.3)}
+
+.card-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.check-ring{
+  width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);
+  background:var(--s2);display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;
+}
+.card-row.collected .check-ring{background:var(--green2);border-color:var(--green);box-shadow:0 0 8px rgba(48,208,128,0.35)}
+.check-mark{display:none;color:#fff;font-size:13px;font-weight:800}
+.card-row.collected .check-mark{display:block}
+.expand-hint{font-size:9px;color:var(--text3);text-align:right;margin-top:2px;line-height:1.2}
+.card-row.collected .expand-hint{color:var(--green2)}
+
+/* ── EXPANDED DETAIL ──────────────────────── */
+.card-detail{display:none;padding:0 12px 12px;border-top:1px solid var(--border)}
+.card-row.open .card-detail{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}
+.detail-box{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.d-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em}
+.d-val{font-size:13px;font-weight:700;color:var(--text);margin-top:2px}
+.d-val.gold{color:var(--gold)}
+.d-val.green{color:var(--green)}
+.d-val.purple{color:#b080f0}
+.detail-note{font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.act-btn{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:9px 8px;border-radius:8px;font-size:11px;font-weight:600;
+  text-decoration:none;border:none;cursor:pointer;letter-spacing:0.02em;
+  transition:opacity 0.15s;
+}
+.act-btn:active{opacity:0.7}
+.btn-tcg{background:rgba(64,144,240,0.12);color:var(--blue);border:1px solid rgba(64,144,240,0.3)}
+.btn-pc{background:rgba(240,192,64,0.1);color:var(--gold);border:1px solid rgba(240,192,64,0.3)}
+.btn-ebay{background:rgba(224,144,48,0.1);color:var(--amber);border:1px solid rgba(224,144,48,0.3)}
+.btn-check{background:rgba(48,208,128,0.1);color:var(--green);border:1px solid rgba(48,208,128,0.3);width:100%;grid-column:1/-1}
+
+/* ── BOTTOM BAR ───────────────────────────── */
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(8,8,18,0.97);backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  padding:8px 10px;padding-bottom:calc(8px + env(safe-area-inset-bottom));
+  display:flex;gap:6px;
+}
+.bot-btn{
+  flex:1;padding:9px 4px;border-radius:8px;
+  border:1px solid var(--border2);background:var(--s2);
+  font-size:10px;font-weight:700;cursor:pointer;color:var(--text2);
+  letter-spacing:0.03em;
+}
+.bot-btn.danger{color:var(--red);border-color:rgba(224,80,80,0.3);background:rgba(224,80,80,0.07)}
+.bot-btn:active{opacity:0.7}
+
+/* ── EMPTY ────────────────────────────────── */
+.empty{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-icon{font-size:52px;margin-bottom:12px;opacity:0.4}
+.empty-text{font-size:15px;font-weight:600}
+.empty-sub{font-size:12px;margin-top:6px;color:var(--text3)}
+
+/* ── INSTALL BANNER ───────────────────────── */
+.install-banner{
+  display:none;margin:8px 10px;
+  background:var(--s2);border:1px solid var(--border2);
+  border-radius:10px;padding:10px 12px;
+  align-items:center;gap:10px;font-size:12px;
+}
+.ib-close{margin-left:auto;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
+</style>
+</head>
+<body>
+
+<!-- SET NAVIGATION -->
+<nav class="set-nav">
+  <div class="set-tabs">
+    <button class="set-tab t-noctowl active" onclick="switchSet('noctowl',this)">
+      <span class="tab-icon">🦉</span>
+      <span class="tab-label">Noctowl</span>
+    </button>
+    <button class="set-tab t-hoothoot" onclick="switchSet('hoothoot',this)">
+      <span class="tab-icon">🐦</span>
+      <span class="tab-label">Hoothoot</span>
+    </button>
+    <button class="set-tab t-surfing" onclick="switchSet('surfing',this)">
+      <span class="tab-icon">🏄</span>
+      <span class="tab-label">Surfing Pika</span>
+    </button>
+    <button class="set-tab t-cameo" onclick="switchSet('cameo',this)">
+      <span class="tab-icon">🎭</span>
+      <span class="tab-label">Cameos</span>
+    </button>
+  </div>
+</nav>
+
+<!-- SET HEADER -->
+<div class="set-header">
+  <div class="set-title-row">
+    <div class="set-title c-noctowl" id="set-title">🦉 Noctowl Master Set</div>
+    <div class="set-pct" id="set-pct">0%</div>
+  </div>
+  <div class="stat-pills">
+    <div class="stat-pill"><div class="sp-val" id="sp-collected">0</div><div class="sp-lab">Collected</div></div>
+    <div class="stat-pill"><div class="sp-val" id="sp-needed">0</div><div class="sp-lab">Needed</div></div>
+    <div class="stat-pill"><div class="sp-val" id="sp-total">0</div><div class="sp-lab">Total</div></div>
+    <div class="stat-pill"><div class="sp-val" id="sp-rare">0</div><div class="sp-lab">Rare/Promos</div></div>
+    <div class="stat-pill"><div class="sp-val" id="sp-val">—</div><div class="sp-lab">Top Card $</div></div>
+  </div>
+  <div class="prog-bar-wrap">
+    <div class="prog-info">
+      <span id="prog-text">0 of 0 collected</span>
+      <span id="prog-msg">Start hunting! 🎯</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill c-noctowl" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-row" id="filter-row">
+  <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+  <button class="filter-btn" onclick="setFilter('en',this)">🇺🇸 English</button>
+  <button class="filter-btn" onclick="setFilter('jp',this)">🇯🇵 Japanese</button>
+  <button class="filter-btn" onclick="setFilter('needed',this)">Needed</button>
+  <button class="filter-btn" onclick="setFilter('collected',this)">Collected</button>
+  <button class="filter-btn" onclick="setFilter('rare',this)">⭐ Rare</button>
+  <button class="filter-btn" onclick="setFilter('promo',this)">Promos</button>
+</div>
+<div class="search-wrap">
+  <input class="search-input" type="search" placeholder="Search cards..." oninput="handleSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+</div>
+
+<div class="install-banner" id="ib">
+  <span style="font-size:20px">📱</span>
+  <span style="flex:1;line-height:1.5"><strong style="color:var(--text)">Add to Home Screen</strong><br><span style="color:var(--text3)">Safari → Share → Add to Home Screen</span></span>
+  <span class="ib-close" onclick="dismissBanner()">✕</span>
+</div>
+
+<div class="card-list" id="card-list"></div>
+
+<div class="bottom-bar">
+  <button class="bot-btn" onclick="markAllVisible(true)">✓ Check All</button>
+  <button class="bot-btn" onclick="markAllVisible(false)">○ Uncheck</button>
+  <button class="bot-btn danger" onclick="resetCurrent()">↺ Reset Set</button>
+</div>
+
+<script>
+var LIM = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/';
+var TCGIO = 'https://images.pokemontcg.io/';
+var CDN = 'https://tcgplayer-cdn.tcgplayer.com/product/';
+
+// ═══════════════════════════════════════════════════════════════
+// DATASET 1: NOCTOWL (45 cards)
+// ═══════════════════════════════════════════════════════════════
+var NOCTOWL = [
+  {id:'n0',name:'Noctowl',set:'Neo Genesis',num:'42/111',year:2000,lang:'en',rarity:'Uncommon',special:false,promo:false,img:LIM+'N1/N1_042_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/87791/pokemon-neo-genesis-noctowl',pc:'https://www.pricecharting.com/game/pokemon-neo-genesis/noctowl-42',nmPrice:'$1.50',note:"Noctowl's debut. Ken Sugimori artwork. 1st Edition copies worth more."},
+  {id:'n1',name:'Shining Noctowl',set:'Neo Destiny',num:'110/105',year:2002,lang:'en',rarity:'Shining Holo Secret Rare',special:true,promo:false,img:LIM+'N4/N4_110_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/89168/pokemon-neo-destiny-shining-noctowl',pc:'https://www.pricecharting.com/game/pokemon-neo-destiny/shining-noctowl-110',nmPrice:'$288–$631',note:'Crown jewel. Unlimited: 3,254 graded, 275 PSA 10. PSA 10 sold for $1,173. Numbered above set total.'},
+  {id:'n2',name:'Shining Noctowl (1st Ed.)',set:'Neo Destiny',num:'110/105',year:2002,lang:'en',rarity:'Shining Holo — 1st Edition',special:true,promo:false,img:LIM+'N4/N4_110_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/89168/pokemon-neo-destiny-shining-noctowl',pc:'https://www.pricecharting.com/game/pokemon-neo-destiny/shining-noctowl-1st-edition-110',nmPrice:'$500–$700+',note:'877 total graded, only 176 PSA 10. PSA 10 listed at ~$2,671. The ultimate Noctowl grail.'},
+  {id:'n3',name:'Noctowl',set:'Skyridge',num:'40/144',year:2003,lang:'en',rarity:'Uncommon',special:false,promo:false,img:TCGIO+'ecard3/40.png',tcg:'https://www.tcgplayer.com/product/87790/pokemon-skyridge-noctowl',pc:'https://www.pricecharting.com/game/pokemon-skyridge/noctowl-40',nmPrice:'$10–$15',note:'Final WotC set. E-Card era. One of the rarest English sets ever printed.'},
+  {id:'n4',name:'Noctowl',set:'EX Unseen Forces',num:'43/115',year:2005,lang:'en',rarity:'Uncommon',special:false,promo:false,img:TCGIO+'ex10/43.png',tcg:'https://www.tcgplayer.com/product/87792/pokemon-unseen-forces-noctowl',pc:'https://www.pricecharting.com/game/pokemon-ex-unseen-forces/noctowl-43',nmPrice:'$1.50',note:'EX era. Reverse holo version harder to find gem mint.'},
+  {id:'n5',name:'Noctowl',set:'Diamond & Pearl',num:'34/130',year:2007,lang:'en',rarity:'Uncommon',special:false,promo:false,img:TCGIO+'dp1/34.png',tcg:'https://www.tcgplayer.com/product/87793/pokemon-diamond-and-pearl-noctowl',pc:'https://www.pricecharting.com/game/pokemon-diamond-pearl/noctowl-34',nmPrice:'$1.00',note:'Diamond & Pearl base set. Reverse holo variant available.'},
+  {id:'n6',name:'Noctowl',set:'HeartGold & SoulSilver',num:'8/123',year:2010,lang:'en',rarity:'Rare Holo',special:false,promo:false,img:LIM+'HS/HS_008_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/87794/pokemon-heartgold-soulsilver-noctowl',pc:'https://www.pricecharting.com/game/pokemon-heartgold-soulsilver/noctowl-8',nmPrice:'$3.00',note:"Only standard Rare Holo in English. Non-holo theme deck variant also exists."},
+  {id:'n7',name:'Noctowl (Theme Deck Non-Holo)',set:'HeartGold & SoulSilver',num:'8/123',year:2010,lang:'en',rarity:'Non-Holo Rare',special:false,promo:false,img:LIM+'HS/HS_008_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/87794/pokemon-heartgold-soulsilver-noctowl',pc:'https://www.pricecharting.com/game/pokemon-heartgold-soulsilver/noctowl-8',nmPrice:'$3–$6',note:'Non-holographic variant from Hoothoot theme deck. Same number, different finish.'},
+  {id:'n8',name:'Noctowl',set:'HGSS Black Star Promos',num:'HGSS06',year:2010,lang:'en',rarity:'Promo Holo',special:false,promo:true,img:LIM+'HSP/HSP_006_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/87795/pokemon-hgss-promos-noctowl-hgss06',pc:'https://www.pricecharting.com/game/pokemon-hgss-promos/noctowl-hgss06',nmPrice:'$6–$8',note:'Pokémon League promo. Often has handling damage from event distribution.'},
+  {id:'n9',name:'Noctowl',set:'Plasma Freeze',num:'92/116',year:2013,lang:'en',rarity:'Uncommon',special:false,promo:false,img:LIM+'PLF/PLF_092_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/87796/pokemon-plasma-freeze-noctowl',pc:'https://www.pricecharting.com/game/pokemon-plasma-freeze/noctowl-92',nmPrice:'$0.50',note:'Black & White era. Standard uncommon.'},
+  {id:'n10',name:'Noctowl BREAK',set:'XY Black Star Promos',num:'XY136',year:2016,lang:'en',rarity:'BREAK Promo Holo',special:true,promo:true,img:LIM+'XYP/XYP_136_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/114013/pokemon-xy-promos-noctowl-break',pc:'https://www.pricecharting.com/game/pokemon-xy-black-star-promos/noctowl-break-xy136',nmPrice:'$8–$10',note:'Unique horizontal gold-foil BREAK evolution. Event-distributed promo. XY era exclusive mechanic.'},
+  {id:'n11',name:'Noctowl',set:'BREAKthrough',num:'120/162',year:2015,lang:'en',rarity:'Uncommon',special:false,promo:false,img:LIM+'BKT/BKT_120_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/107239/pokemon-xy-breakthrough-noctowl',pc:'https://www.pricecharting.com/game/pokemon-xy-breakthrough/noctowl-120',nmPrice:'$0.50',note:'Pairs with the BREAK promo above.'},
+  {id:'n12',name:'Noctowl',set:'Burning Shadows',num:'107/147',year:2017,lang:'en',rarity:'Uncommon',special:false,promo:false,img:LIM+'BUS/BUS_107_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/138603/pokemon-sm-burning-shadows-noctowl',pc:'https://www.pricecharting.com/game/pokemon-burning-shadows/noctowl-107',nmPrice:'$0.50',note:'Sun & Moon era.'},
+  {id:'n13',name:'Noctowl',set:'Unified Minds',num:'166/236',year:2019,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'UNM/UNM_166_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/195166/pokemon-sm-unified-minds-noctowl',pc:'https://www.pricecharting.com/game/pokemon-unified-minds/noctowl-166',nmPrice:'$0.25',note:'Common rarity — still needed for master set!'},
+  {id:'n14',name:'Noctowl',set:'Sword & Shield',num:'144/202',year:2020,lang:'en',rarity:'Uncommon',special:false,promo:false,img:LIM+'SSH/SSH_144_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/208463/pokemon-swsh01-sword-and-shield-base-set-noctowl',pc:'https://www.pricecharting.com/game/pokemon-sword-shield/noctowl-144',nmPrice:'$0.50',note:'Master Ball reverse holo variant exists for completionists.'},
+  {id:'n15',name:'Noctowl',set:'SWSH Black Star Promos',num:'SWSH027',year:2020,lang:'en',rarity:'Promo Holo',special:false,promo:true,img:LIM+'SP/SP_027_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/214238/pokemon-swsh-sword-and-shield-promo-cards-noctowl-swsh027',pc:'https://www.pricecharting.com/game/pokemon-swsh-promos/noctowl-swsh027',nmPrice:'$1.50–$2',note:'Sword & Shield era event promo.'},
+  {id:'n16',name:'Noctowl',set:'Astral Radiance',num:'121/189',year:2022,lang:'en',rarity:'Uncommon',special:false,promo:false,img:LIM+'ASR/ASR_121_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/272356/pokemon-swsh10-astral-radiance-noctowl',pc:'https://www.pricecharting.com/game/pokemon-astral-radiance/noctowl-121',nmPrice:'$0.50',note:'SWSH Astral Radiance.'},
+  {id:'n17',name:'Noctowl',set:'Temporal Forces',num:'127/162',year:2024,lang:'en',rarity:'Uncommon',special:false,promo:false,img:LIM+'TEF/TEF_127_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/temporal-forces?q=noctowl',pc:'https://www.pricecharting.com/game/pokemon-temporal-forces/noctowl-127',nmPrice:'$0.50',note:'SV Temporal Forces. Master Ball reverse exists.'},
+  {id:'n18',name:'Noctowl',set:'Stellar Crown',num:'115/142',year:2024,lang:'en',rarity:'Rare',special:false,promo:false,img:LIM+'SCR/SCR_115_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/567341/pokemon-sv07-stellar-crown-noctowl',pc:'https://www.pricecharting.com/game/pokemon-stellar-crown/noctowl-115',nmPrice:'$0.75',note:'Tera Pokémon with useful Jewel Seeker ability. Sees competitive play.'},
+  {id:'n19',name:'Noctowl',set:'SVP Black Star Promos',num:'SVP141',year:2024,lang:'en',rarity:'Promo',special:false,promo:true,img:LIM+'SVP/SVP_141_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/578811/pokemon-sv-scarlet-and-violet-promo-cards-noctowl-141',pc:'https://www.pricecharting.com/game/pokemon-promo/noctowl-141',nmPrice:'$3–$4',note:'Standard SVP promo. Pokémon Center exclusive holofoil version exists separately.'},
+  {id:'n20',name:'Noctowl (Pokémon Center Exclusive)',set:'SVP Black Star Promos',num:'SVP141',year:2024,lang:'en',rarity:'Promo Holo — PC Exclusive',special:true,promo:true,img:LIM+'SVP/SVP_141_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/578811/pokemon-sv-scarlet-and-violet-promo-cards-noctowl-141',pc:'https://www.pricecharting.com/game/pokemon-promo/noctowl-pokemon-center-141',nmPrice:'$28–$35',note:'Pokémon Center holofoil stamp variant. $28+ vs $3 standard. Much rarer.'},
+  {id:'n21',name:'Noctowl',set:'Prismatic Evolutions',num:'078/131',year:2025,lang:'en',rarity:'Rare',special:false,promo:false,img:LIM+'PRE/PRE_078_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/610433/pokemon-sv-prismatic-evolutions-noctowl',pc:'https://www.pricecharting.com/game/pokemon-prismatic-evolutions/noctowl-78',nmPrice:'$1–$3',note:'Most recent English Noctowl. Master Ball reverse holo is the chase version.'},
+  // JAPANESE
+  {id:'n22',name:'Noctowl',set:'Gold, Silver, to a New World...',num:'—/—',year:2000,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:TCGIO+'neo1/42.png',tcg:'https://www.tcgplayer.com/product/575863/pokemon-japan-gold-silver-to-a-new-world-noctowl',pc:'https://www.pricecharting.com/game/pokemon-japanese-gold-silver-new-world/noctowl',nmPrice:'$2–$5',note:'First Japanese Noctowl. 1st edition copies command premium.'},
+  {id:'n23',name:"Morty's Noctowl",set:'Pokémon VS',num:'024/141',year:2001,lang:'jp',rarity:'Common',special:false,promo:false,img:CDN+'622638_in_200x200.jpg',tcg:'https://www.tcgplayer.com/product/622638/pokemon-japan-pokemon-vs-mortys-noctowl',pc:'https://www.pricecharting.com/game/pokemon-japanese-vs/mortys-noctowl-24',nmPrice:'$5–$15',note:'Japan-exclusive. Never released in English. Features Morty the Ecruteak Gym Leader.'},
+  {id:'n24',name:'Noctowl',set:'Mysterious Mountains',num:'064/088',year:2002,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:TCGIO+'ecard3/40.png',ebay:'https://www.ebay.com/itm/389501783851',pc:'https://www.pricecharting.com/game/pokemon-japanese-mysterious-mountains/noctowl-64',nmPrice:'$3–$8',note:'Japanese Skyridge equivalent. Hard to find internationally.'},
+  {id:'n25',name:'Noctowl',set:'HeartGold Collection',num:'059/070',year:2010,lang:'jp',rarity:'Rare Holo',special:false,promo:false,img:CDN+'608061_in_200x200.jpg',tcg:'https://www.tcgplayer.com/product/608061/pokemon-japan-l1-heartgold-collection-noctowl',pc:'https://www.pricecharting.com/game/pokemon-japanese-heartgold-collection/noctowl-59',nmPrice:'$4–$8',note:'Japanese HGSS Rare Holo. Higher print quality than English version.'},
+  {id:'n26',name:'Noctowl',set:'L-P Promos',num:'026/L-P',year:2010,lang:'jp',rarity:'Promo Holo',special:false,promo:true,img:null,ebay:'https://www.ebay.com/itm/187891740028',pc:'https://www.pricecharting.com/game/pokemon-japanese-promos-l/noctowl-26',nmPrice:'$10–$20',note:'Japanese event promo. Very difficult to source outside Japan.'},
+  {id:'n27',name:'Noctowl',set:'Space-Time Creation',num:'—/—',year:2006,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:CDN+'605757_in_200x200.jpg',tcg:'https://www.tcgplayer.com/product/605757/pokemon-japan-dp1-space-time-creation-noctowl',pc:'https://www.pricecharting.com/game/pokemon-japanese-space-time-creation/noctowl',nmPrice:'$2–$4',note:'Japanese DP1 set.'},
+  {id:'n28',name:'Noctowl',set:'Spiral Force',num:'044/051',year:2013,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:null,ebay:'https://www.ebay.com/itm/147157328945',pc:'https://www.pricecharting.com/game/pokemon-japanese-spiral-force/noctowl-44',nmPrice:'$1.50–$3',note:'Japanese Plasma Freeze equivalent (BW8).'},
+  {id:'n29',name:'Noctowl',set:'Blue Shock',num:'050/059',year:2015,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:null,ebay:'https://www.ebay.com/itm/365850685910',pc:'https://www.pricecharting.com/game/pokemon-japanese-blue-shock/noctowl-50',nmPrice:'$1–$2',note:'Japanese BREAKthrough equivalent (XY6).'},
+  {id:'n30',name:'Noctowl',set:'To Have Seen the Battle Rainbow',num:'044/051',year:2017,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:null,ebay:'https://pokemonsteve.com/en-us/products/noctowl-044051-cgc-10-pristine-2017-have-seenbattle-rainbow-pokemon-japanese-6104639049',pc:'https://www.pricecharting.com/game/pokemon-japanese-to-have-seen-the-battle-rainbow/noctowl-44',nmPrice:'$1–$3',note:'Japanese Burning Shadows equivalent.'},
+  {id:'n31',name:'Noctowl',set:'Sky Legend',num:'039/054',year:2019,lang:'jp',rarity:'Common',special:false,promo:false,img:CDN+'573572_in_200x200.jpg',tcg:'https://www.tcgplayer.com/product/573572/pokemon-japan-sm10b-sky-legend-noctowl',pc:'https://www.pricecharting.com/game/pokemon-japanese-sky-legend/noctowl-39',nmPrice:'$1–$2',note:'Japanese Unified Minds equivalent.'},
+  {id:'n32',name:'Noctowl',set:'Shield',num:'048/060',year:2020,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:CDN+'568477_in_200x200.jpg',tcg:'https://www.tcgplayer.com/product/568477/pokemon-japan-s1h-shield-noctowl',pc:'https://www.pricecharting.com/game/pokemon-japanese-shield/noctowl-48',nmPrice:'$1–$2',note:'Japanese Sword & Shield base.'},
+  {id:'n33',name:'Noctowl',set:'S-P Promos',num:'026/S-P',year:2020,lang:'jp',rarity:'Promo',special:false,promo:true,img:null,ebay:'https://www.ebay.com/itm/234096173767',pc:'https://www.pricecharting.com/game/pokemon-japanese-promos-s/noctowl-26',nmPrice:'$8–$15',note:'Japanese Gym event promo. Has Pokémon Card Gym logo stamp.'},
+  {id:'n34',name:'Noctowl',set:'Battle Region',num:'056/067',year:2022,lang:'jp',rarity:'Uncommon',special:false,promo:false,img:null,ebay:'https://www.ebay.com/itm/358252369857',pc:'https://www.pricecharting.com/game/pokemon-japanese-battle-region/noctowl-56',nmPrice:'$1–$2',note:'Japanese Astral Radiance equivalent.'},
+  {id:'n35',name:'Noctowl',set:'Wild Force',num:'055/071',year:2024,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/b/Noctowl-055-071-Sv5k-Wild-Force/2536/bn_7124584059',pc:'https://www.pricecharting.com/game/pokemon-japanese-wild-force/noctowl-55',nmPrice:'$0.50–$1',note:'Japanese Temporal Forces equivalent.'},
+  {id:'n36',name:'Noctowl',set:'Stellar Miracle',num:'077/102',year:2024,lang:'jp',rarity:'Rare',special:false,promo:false,img:CDN+'567932_in_200x200.jpg',tcg:'https://www.tcgplayer.com/product/567932/pokemon-japan-sv7-stellar-miracle-noctowl-077-102',pc:'https://www.pricecharting.com/game/pokemon-japanese-stellar-miracle/noctowl-77',nmPrice:'$1–$2',note:'Artwork by matazo.'},
+  {id:'n37',name:'Noctowl AR',set:'Stellar Miracle',num:'114/102',year:2024,lang:'jp',rarity:'Art Rare',special:true,promo:false,img:CDN+'567969_in_200x200.jpg',tcg:'https://www.tcgplayer.com/product/567969/pokemon-japan-sv7-stellar-miracle-noctowl-114-102',pc:'https://www.pricecharting.com/game/pokemon-japanese-stellar-miracle/noctowl-114',nmPrice:'$15–$25',note:'Japan-exclusive Art Rare. Artwork by Tetsu Kayama. 84 PSA graded. PSA 10: ~$21–$42.'},
+  {id:'n38',name:'Noctowl',set:'SV-P Promos',num:'173/SV-P',year:2024,lang:'jp',rarity:'Promo Mirror Holo',special:false,promo:true,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=noctowl+173+SV-P+promo+japanese',pc:'https://www.pricecharting.com/game/pokemon-japanese-promos-sv/noctowl-173',nmPrice:'$5–$10',note:'Gym First Entry Campaign promo (July–Sept 2024). Mirror Holo finish.'},
+  {id:'n39',name:'Noctowl',set:'Terastal Fest ex',num:'128/187',year:2025,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/itm/167792994438',pc:'https://www.pricecharting.com/game/pokemon-japanese-terastal-fest-ex/noctowl-128',nmPrice:'$0.50–$1',note:'Japanese Prismatic Evolutions equivalent. Master Ball variant exists.'},
+  {id:'n40',name:'Noctowl',set:'Stellar Tera Type Starter Set',num:'010/022',year:2024,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=noctowl+010+022+stellar+tera+starter',pc:null,nmPrice:'$1–$3',note:'Ceruledge ex deck exclusive. Reprint of Stellar Crown art.'},
+  {id:'n41',name:'Noctowl',set:'Battle Partners Deck Build Box',num:'008/045',year:2025,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=noctowl+008+045+battle+partners+deck',pc:null,nmPrice:'$1–$3',note:'Battle Partners Deck Build Box exclusive.'},
+  {id:'n42',name:'Noctowl',set:'Premium Trainer Box MEGA',num:'009/043',year:2025,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=noctowl+009+043+premium+trainer+box+mega',pc:null,nmPrice:'$1–$3',note:'Premium Trainer Box MEGA exclusive.'},
+  {id:'n43',name:'Noctowl',set:'MEGA Dream ex',num:'138/193',year:2025,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=noctowl+138+193+mega+dream+ex+pokemon',pc:null,nmPrice:'$0.50–$1',note:'Japanese Ascended Heroes equivalent (M2a).'},
+  {id:'n44',name:'Noctowl',set:'Start Deck 100 Battle Collection',num:'573/742',year:2025,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=noctowl+573+742+start+deck+100',pc:null,nmPrice:'$0.50–$1',note:'Part of the massive 742-card Start Deck 100 Battle Collection.'},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// DATASET 2: HOOTHOOT (complete list)
+// ═══════════════════════════════════════════════════════════════
+var HOOTHOOT = [
+  {id:'h0',name:'Hoothoot',set:'Neo Genesis',num:'60/111',year:2000,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'N1/N1_060_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/neo-genesis?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-neo-genesis/hoothoot-60',nmPrice:'$0.75',note:"Hoothoot's debut card alongside Noctowl. 1st Edition copies are worth more."},
+  {id:'h1',name:'Hoothoot',set:'Skyridge',num:'65/144',year:2003,lang:'en',rarity:'Common',special:false,promo:false,img:TCGIO+'ecard3/65.png',tcg:'https://www.tcgplayer.com/search/pokemon/skyridge?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-skyridge/hoothoot-65',nmPrice:'$5–$10',note:'Final WotC set. Very hard to find in mint condition.'},
+  {id:'h2',name:'Hoothoot',set:'EX Unseen Forces',num:'59/115',year:2005,lang:'en',rarity:'Common',special:false,promo:false,img:TCGIO+'ex10/59.png',tcg:'https://www.tcgplayer.com/search/pokemon/ex-unseen-forces?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-ex-unseen-forces/hoothoot-59',nmPrice:'$0.75',note:'EX era common.'},
+  {id:'h3',name:'Hoothoot',set:'Diamond & Pearl',num:'85/130',year:2007,lang:'en',rarity:'Common',special:false,promo:false,img:TCGIO+'dp1/85.png',tcg:'https://www.tcgplayer.com/search/pokemon/diamond-and-pearl?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-diamond-pearl/hoothoot-85',nmPrice:'$0.50',note:'DP base set common.'},
+  {id:'h4',name:'Hoothoot',set:'HeartGold & SoulSilver',num:'66/123',year:2010,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'HS/HS_066_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/heartgold-soulsilver?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-heartgold-soulsilver/hoothoot-66',nmPrice:'$0.50',note:'HGSS base set common.'},
+  {id:'h5',name:'Hoothoot',set:'HGSS Black Star Promos',num:'HGSS05',year:2010,lang:'en',rarity:'Promo Holo',special:false,promo:true,img:LIM+'HSP/HSP_005_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/hgss-promos?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-hgss-promos/hoothoot-hgss05',nmPrice:'$4–$7',note:'Pokémon League promo. Hoothoot pairs with the Noctowl HGSS06 promo.'},
+  {id:'h6',name:'Hoothoot',set:'Plasma Freeze',num:'91/116',year:2013,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'PLF/PLF_091_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/plasma-freeze?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-plasma-freeze/hoothoot-91',nmPrice:'$0.25',note:'BW Plasma Freeze common.'},
+  {id:'h7',name:'Hoothoot',set:'BREAKthrough',num:'119/162',year:2015,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'BKT/BKT_119_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/xy-breakthrough?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-xy-breakthrough/hoothoot-119',nmPrice:'$0.25',note:'XY BREAKthrough. Pairs with Noctowl BREAK promo.'},
+  {id:'h8',name:'Hoothoot',set:'Burning Shadows',num:'106/147',year:2017,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'BUS/BUS_106_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/burning-shadows?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-burning-shadows/hoothoot-106',nmPrice:'$0.25',note:'Sun & Moon era common.'},
+  {id:'h9',name:'Hoothoot',set:'Unified Minds',num:'165/236',year:2019,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'UNM/UNM_165_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/unified-minds?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-unified-minds/hoothoot-165',nmPrice:'$0.25',note:'SM Unified Minds common.'},
+  {id:'h10',name:'Hoothoot',set:'Sword & Shield',num:'143/202',year:2020,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'SSH/SSH_143_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/sword-and-shield?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-sword-shield/hoothoot-143',nmPrice:'$0.25',note:'SWSH base set.'},
+  {id:'h11',name:'Hoothoot',set:'Astral Radiance',num:'120/189',year:2022,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'ASR/ASR_120_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/272356/pokemon-swsh10-astral-radiance-noctowl',pc:'https://www.pricecharting.com/game/pokemon-astral-radiance/hoothoot-120',nmPrice:'$0.25',note:'SWSH Astral Radiance. Artwork by Pani Kobayashi.'},
+  {id:'h12',name:'Hoothoot (Trainer Gallery)',set:'Astral Radiance',num:'TG12/TG30',year:2022,lang:'en',rarity:'Trainer Gallery Holo Rare',special:true,promo:false,img:'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/ASR/ASR_TG12_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/272483/pokemon-swsh10-astral-radiance-trainer-gallery-hoothoot',pc:'https://www.pricecharting.com/game/pokemon-astral-radiance/hoothoot-tg12',nmPrice:'$8–$12',note:'THE key Hoothoot card. Full art Trainer Gallery with HYOGONOSUKE artwork featuring a sage. PSA 10 Pop: 117. PSA 10 sold for $52. Stunning artwork.'},
+  {id:'h13',name:'Hoothoot',set:'Temporal Forces',num:'126/162',year:2024,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'TEF/TEF_126_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/temporal-forces?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-temporal-forces/hoothoot-126',nmPrice:'$0.25',note:'SV Temporal Forces common.'},
+  {id:'h14',name:'Hoothoot',set:'Stellar Crown',num:'114/142',year:2024,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'SCR/SCR_114_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/stellar-crown?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-stellar-crown/hoothoot-114',nmPrice:'$0.25',note:'SV Stellar Crown common.'},
+  {id:'h15',name:'Hoothoot',set:'Prismatic Evolutions',num:'077/131',year:2025,lang:'en',rarity:'Common',special:false,promo:false,img:LIM+'PRE/PRE_077_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/prismatic-evolutions?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-prismatic-evolutions/hoothoot-77',nmPrice:'$0.50–$1',note:'Most recent Hoothoot. Master Ball reverse holo variant exists.'},
+  // Japanese Hoothoot
+  {id:'h16',name:'Hoothoot',set:'Gold, Silver, to a New World...',num:'—/—',year:2000,lang:'jp',rarity:'Common',special:false,promo:false,img:TCGIO+'neo1/60.png',tcg:'https://www.tcgplayer.com/search/pokemon/gold-silver-new-world?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-japanese-gold-silver-new-world/hoothoot',nmPrice:'$1–$3',note:"First Japanese Hoothoot. Debut alongside Noctowl."},
+  {id:'h17',name:'Hoothoot',set:'Totodile Half Deck',num:'3',year:2000,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+totodile+half+deck+japanese',pc:null,nmPrice:'$5–$15',note:'Japan-exclusive. From the Intro Pack Neo Totodile Half Deck. One of the rarest Hoothoot prints.'},
+  {id:'h18',name:'Hoothoot',set:'Mysterious Mountains',num:'063/088',year:2002,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+063+mysterious+mountains+japanese',pc:'https://www.pricecharting.com/game/pokemon-japanese-mysterious-mountains/hoothoot-63',nmPrice:'$2–$5',note:'Japanese Skyridge equivalent.'},
+  {id:'h19',name:'Hoothoot',set:'Meganium Constructed Starter Deck',num:'007/016',year:2005,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+007+016+meganium+starter+deck+japanese',pc:null,nmPrice:'$3–$8',note:'Japan-exclusive deck card. Japanese equivalent of EX Unseen Forces Hoothoot.'},
+  {id:'h20',name:'Hoothoot',set:'HeartGold Collection',num:'058/070',year:2010,lang:'jp',rarity:'Common',special:false,promo:false,img:null,tcg:'https://www.tcgplayer.com/search/pokemon/heartgold-collection?q=hoothoot',pc:'https://www.pricecharting.com/game/pokemon-japanese-heartgold-collection/hoothoot-58',nmPrice:'$1–$2',note:'Japanese HGSS equivalent.'},
+  {id:'h21',name:'Hoothoot',set:'L-P Promos',num:'025/L-P',year:2010,lang:'jp',rarity:'Promo Holo',special:false,promo:true,img:null,ebay:'https://www.ebay.com/itm/285051192640',pc:null,nmPrice:'$10–$20',note:'Japanese promo. Pairs with Noctowl 026/L-P. Very hard to find outside Japan.'},
+  {id:'h22',name:'Hoothoot',set:'Space-Time Creation',num:'—/—',year:2006,lang:'jp',rarity:'Common',special:false,promo:false,img:null,tcg:'https://www.tcgplayer.com/search/pokemon/space-time-creation?q=hoothoot',pc:null,nmPrice:'$1–$2',note:'Japanese Diamond & Pearl equivalent.'},
+  {id:'h23',name:'Hoothoot',set:'Spiral Force',num:'043/051',year:2013,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+043+spiral+force+japanese',pc:'https://www.pricecharting.com/game/pokemon-japanese-spiral-force/hoothoot-43',nmPrice:'$0.50–$1',note:'Japanese Plasma Freeze equivalent.'},
+  {id:'h24',name:'Hoothoot',set:'Blue Shock',num:'049/059',year:2015,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+049+blue+shock+japanese',pc:null,nmPrice:'$0.50–$1',note:'Japanese BREAKthrough equivalent.'},
+  {id:'h25',name:'Hoothoot',set:'To Have Seen the Battle Rainbow',num:'043/051',year:2017,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+043+051+battle+rainbow+japanese',pc:null,nmPrice:'$0.50–$1',note:'Japanese Burning Shadows equivalent.'},
+  {id:'h26',name:'Hoothoot',set:'Sky Legend',num:'038/054',year:2019,lang:'jp',rarity:'Common',special:false,promo:false,img:null,tcg:'https://www.tcgplayer.com/search/pokemon/sky-legend?q=hoothoot',pc:null,nmPrice:'$0.50–$1',note:'Japanese Unified Minds equivalent.'},
+  {id:'h27',name:'Hoothoot',set:'Shield',num:'047/060',year:2020,lang:'jp',rarity:'Common',special:false,promo:false,img:null,tcg:'https://www.tcgplayer.com/search/pokemon/shield?q=hoothoot',pc:null,nmPrice:'$0.50–$1',note:'Japanese SWSH base equivalent.'},
+  {id:'h28',name:'Hoothoot',set:'Battle Region',num:'055/067',year:2022,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+055+battle+region+japanese',pc:null,nmPrice:'$0.50–$1',note:'Japanese Astral Radiance equivalent.'},
+  {id:'h29',name:'Hoothoot (AR)',set:'Battle Region',num:'077/067',year:2022,lang:'jp',rarity:'Art Rare',special:true,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+077+battle+region+art+rare+japanese',pc:null,nmPrice:'$10–$20',note:'Japan-exclusive Art Rare — this is the Japanese equivalent of the Trainer Gallery! Stunning full-art illustration by HYOGONOSUKE. Must-have for Hoothoot collectors.'},
+  {id:'h30',name:'Hoothoot',set:'Wild Force',num:'054/071',year:2024,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+054+wild+force+japanese',pc:null,nmPrice:'$0.25–$0.50',note:'Japanese Temporal Forces equivalent.'},
+  {id:'h31',name:'Hoothoot',set:'Stellar Miracle',num:'076/102',year:2024,lang:'jp',rarity:'Common',special:false,promo:false,img:null,tcg:'https://www.tcgplayer.com/search/pokemon/stellar-miracle?q=hoothoot',pc:null,nmPrice:'$0.25–$0.50',note:'Japanese Stellar Crown equivalent.'},
+  {id:'h32',name:'Hoothoot',set:'Stellar Tera Type Starter Set',num:'009/022',year:2024,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+009+022+stellar+tera+starter',pc:null,nmPrice:'$0.50–$1',note:'Deck exclusive. Ceruledge ex starter set.'},
+  {id:'h33',name:'Hoothoot',set:'Terastal Fest ex',num:'127/187',year:2025,lang:'jp',rarity:'Common',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+127+terastal+fest+ex+japanese',pc:null,nmPrice:'$0.25–$0.50',note:'Japanese Prismatic Evolutions equivalent.'},
+  {id:'h34',name:'Hoothoot',set:'MEGA Dream ex',num:'137/193',year:2025,lang:'jp',rarity:'Common (Mirror Holo variants)',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+137+mega+dream+ex+japanese',pc:null,nmPrice:'$0.50–$2',note:'Japanese Ascended Heroes equivalent. Has special Mirror Holo variants (Colorless Energy symbol + Dusk Ball variants).'},
+  {id:'h35',name:'Hoothoot',set:'Battle Partners Deck Build Box',num:'007/045',year:2025,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+007+045+battle+partners+deck',pc:null,nmPrice:'$0.50–$1',note:'Deck box exclusive.'},
+  {id:'h36',name:'Hoothoot',set:'Premium Trainer Box MEGA',num:'008/043',year:2025,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+008+043+premium+trainer+box+mega',pc:null,nmPrice:'$0.50–$1',note:'PTB MEGA exclusive.'},
+  {id:'h37',name:'Hoothoot',set:'Start Deck 100 Battle Collection',num:'572/742',year:2025,lang:'jp',rarity:'Deck Card',special:false,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=hoothoot+572+742+start+deck+100',pc:null,nmPrice:'$0.25–$0.50',note:'Part of the 742-card Start Deck 100 Battle Collection.'},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// DATASET 3: SURFING PIKACHU (all versions)
+// ═══════════════════════════════════════════════════════════════
+var SURFING = [
+  {id:'s0',name:'Surfing Pikachu',set:'Wizards Black Star Promos',num:'#28',year:2001,lang:'en',rarity:'Promo Holo',special:false,promo:true,img:'https://images.pokemontcg.io/bwp/BW54.png',tcg:'https://www.tcgplayer.com/search/pokemon/wizards-black-star-promos?q=surfing+pikachu',pc:'https://www.pricecharting.com/game/pokemon-wizards-black-star-promos/surfing-pikachu-28',nmPrice:'$15–$40',note:"First English Surfing Pikachu. Given out at Pokémon League events. The original — launched the entire Surfing Pikachu mythos in the TCG."},
+  {id:'s1',name:'Surfing Pikachu',set:'Platinum: Rising Rivals',num:'114/111',year:2009,lang:'en',rarity:'Secret Rare Holo',special:true,promo:false,img:LIM+'PL2/PL2_114_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/rising-rivals?q=surfing+pikachu',pc:'https://www.pricecharting.com/game/pokemon-platinum-rising-rivals/surfing-pikachu-114',nmPrice:'$60–$120',note:'Secret Rare — numbered above the set total. The rarest mainstream pack-pull Surfing Pikachu. PSA 10: ~$2,500. One of the biggest chase cards from the Platinum era.'},
+  {id:'s2',name:'Surfing Pikachu',set:'XY Evolutions',num:'111/108',year:2016,lang:'en',rarity:'Secret Rare Holo',special:true,promo:false,img:LIM+'EVO/EVO_111_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/124124/pokemon-xy-evolutions-surfing-pikachu',pc:'https://www.pricecharting.com/game/pokemon-xy-evolutions/surfing-pikachu-111',nmPrice:'$5–$8',note:'Secret Rare from the beloved Evolutions set. Classic Toshinao Aoki artwork. PSA 10: ~$60. Highly collectible from one of the most popular modern sets.'},
+  {id:'s3',name:'Surfing Pikachu V',set:'Celebrations',num:'8/025',year:2021,lang:'en',rarity:'Full Art Ultra Rare',special:true,promo:false,img:LIM+'CEL/CEL_008_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/257070/pokemon-swsh-celebrations-surfing-pikachu-v',pc:'https://www.pricecharting.com/game/pokemon-celebrations/surfing-pikachu-v-8',nmPrice:'$3–$6',note:"25th Anniversary Celebrations set. Full Art treatment of the beloved Surfing Pikachu as a V card. Beautiful modern art."},
+  {id:'s4',name:'Surfing Pikachu',set:'Celebrations Classic Collection',num:'28',year:2021,lang:'en',rarity:'Classic Promo Reprint',special:true,promo:false,img:LIM+'CEL/CEL_009_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/celebrations-classic?q=surfing+pikachu',pc:'https://www.pricecharting.com/game/pokemon-celebrations/surfing-pikachu-9',nmPrice:'$1.50–$3',note:"Classic Collection reprint of the original WOTC promo. Printed in the original card frame style as a tribute. Part of the Celebrations 25th Anniversary set."},
+  // Japanese Surfing Pikachu
+  {id:'s5',name:'Surfing Pikachu (Mt. Fuji Stamp Rally)',set:'Japanese JR East Promo',num:'025/—',year:1997,lang:'jp',rarity:'Promo — Stamp Rally Exclusive',special:true,promo:true,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=surfing+pikachu+mt+fuji+stamp+rally+1997+japanese',pc:'https://www.pricecharting.com/game/pokemon-japanese-promo/surfing-pikachu-mt-fuji-25',nmPrice:'$200–$500+',note:'THE holy grail. JR East train station Stamp Rally (Aug 1997) — collectors needed to collect 30 stamps. Mt. Fuji and train in background art. Total PSA auction value: $18,447. PSA 9: ~$810. PSA 10: $6,564. Rarest Surfing Pikachu ever printed.'},
+  {id:'s6',name:'Surfing Pikachu',set:'Japanese Wizards Promo',num:'025/—',year:1998,lang:'jp',rarity:'Promo',special:true,promo:true,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=surfing+pikachu+japanese+1998+promo',pc:'https://www.pricecharting.com/game/pokemon-japanese-promo/surfing-pikachu',nmPrice:'$30–$80',note:'Early Japanese Surfing Pikachu promo. Various Japanese promotions from 1997-1998. Predates the English release.'},
+  {id:'s7',name:'Surfing Pikachu',set:'Pokémon Card Web',num:'025/048',year:2001,lang:'jp',rarity:'Web Exclusive',special:true,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=surfing+pikachu+025+048+pokemon+card+web+japanese',pc:'https://www.pricecharting.com/game/pokemon-japanese-pokemon-card-web/surfing-pikachu-25',nmPrice:'$15–$40',note:'From the Japanese Pokémon Card Web exclusive online set. Only sold via the Pokémon Card Web website. PSA 10 copies extremely scarce.'},
+  {id:'s8',name:'Surfing Pikachu',set:'Bonds to the End of Time',num:'89/090',year:2008,lang:'jp',rarity:'Secret Rare Holo — 1st Edition',special:true,promo:false,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=surfing+pikachu+089+bonds+to+end+of+time+japanese',pc:'https://www.pricecharting.com/game/pokemon-japanese-bonds-to-the-end-of-time/surfing-pikachu-89',nmPrice:'$40–$100',note:"Japanese Rising Rivals equivalent (PT2: Bonds to the End of Time). 1st Edition holo. One of the price movers — Japanese collectors prize this over the English version."},
+  {id:'s9',name:'Surfing Pikachu (20th Anniversary)',set:'20th Anniversary Special Pack',num:'—',year:2016,lang:'jp',rarity:'20th Anniversary Exclusive Promo',special:true,promo:true,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=surfing+pikachu+20th+anniversary+special+pack+japanese+2016',pc:'https://www.pricecharting.com/game/pokemon-japanese-promo/surfing-pikachu-20th',nmPrice:'$25–$60',note:'Came with the 20th Anniversary Special Pack: M Slowbro-EX + Surfing Pikachu (Sept 16, 2016). Re-imagined classic promo with vintage card layout style. Japan-exclusive.'},
+  {id:'s10',name:'Surfing Pikachu (XY-P Promo)',set:'XY-P Promotional Cards',num:'264/XY-P',year:2016,lang:'jp',rarity:'Promo Holo',special:true,promo:true,img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=surfing+pikachu+264+XY-P+promo+japanese',pc:'https://www.pricecharting.com/game/pokemon-japanese-xy-promos/surfing-pikachu-264',nmPrice:'$20–$50',note:'Japanese XY era promo. PSA 10 copies have sold for significant amounts. Part of the 20th Anniversary promotion in Japan.'},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// DATASET 4: CAMEOS (Noctowl/Hoothoot appearing in other cards)
+// ═══════════════════════════════════════════════════════════════
+var CAMEO = [
+  // Confirmed Noctowl/Hoothoot cameos from research
+  {id:'c0',name:'Bill\'s Maintenance',set:'Neo Genesis',num:'100',year:2000,lang:'en',rarity:'Uncommon Trainer',special:false,promo:false,cameo:'Hoothoot',img:LIM+'N1/N1_100_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/neo-genesis?q=bill%27s+maintenance',pc:'https://www.pricecharting.com/game/pokemon-neo-genesis/bills-maintenance-100',nmPrice:'$2–$5',note:"Hoothoot appears in the background of Bill's office. Classic WotC era Trainer card featuring the iconic Storage System inventor."},
+  {id:'c1',name:'Pokémon Trader',set:'Neo Genesis',num:'102',year:2000,lang:'en',rarity:'Rare Trainer',special:false,promo:false,cameo:'Hoothoot + others',img:LIM+'N1/N1_102_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/neo-genesis?q=pokemon+trader',pc:'https://www.pricecharting.com/game/pokemon-neo-genesis/pokemon-trader-102',nmPrice:'$3–$8',note:'Hoothoot, Murkrow, Hoppip, Cyndaquil, Sentret, Chikorita, Totodile and Mareep all cameo in this bustling Pokémon trading marketplace artwork.'},
+  {id:'c2',name:'Double Colorless Energy',set:'Aquapolis',num:'123',year:2003,lang:'en',rarity:'Uncommon Energy',special:false,promo:false,cameo:'Noctowl + Hoothoot',img:null,tcg:'https://www.tcgplayer.com/search/pokemon/aquapolis?q=double+colorless+energy',pc:'https://www.pricecharting.com/game/pokemon-aquapolis/double-colorless-energy-123',nmPrice:'$2–$5',note:'Both Noctowl AND Hoothoot appear together as cameos in this Aquapolis energy card. A rare dual cameo — perfect for a collector targeting both Pokémon.'},
+  {id:'c3',name:'Morty (Trainer)',set:'HeartGold & SoulSilver',num:'98/123',year:2010,lang:'en',rarity:'Uncommon Supporter',special:false,promo:false,cameo:'Noctowl (implied)',img:LIM+'HS/HS_098_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/heartgold-soulsilver?q=morty',pc:'https://www.pricecharting.com/game/pokemon-heartgold-soulsilver/morty-98',nmPrice:'$1–$3',note:"Morty the Ghost-type Gym Leader — Noctowl's trainer from Gold & Silver. Features Morty in the Ecruteak Gym setting with spiritual imagery."},
+  {id:'c4',name:'Morty\'s Resolve',set:'HeartGold & SoulSilver',num:'99/123',year:2010,lang:'en',rarity:'Uncommon Supporter',special:false,promo:false,cameo:'Noctowl (implied)',img:LIM+'HS/HS_099_R_EN_SM.png',tcg:'https://www.tcgplayer.com/search/pokemon/heartgold-soulsilver?q=morty%27s+resolve',pc:null,nmPrice:'$1–$3',note:"Morty's second trainer card. Both Morty trainer cards are essential for the complete Noctowl collector as he is canonically Noctowl's trainer."},
+  {id:'c5',name:'Morty Full Art',set:'Battle Partners',num:'—',year:2025,lang:'en',rarity:'Full Art Supporter',special:true,promo:false,cameo:'Noctowl (background)',img:null,tcg:'https://www.tcgplayer.com/search/pokemon/battle-partners?q=morty',pc:null,nmPrice:'$5–$20+',note:"Morty's modern card from Battle Partners. Features Noctowl prominently in the artwork. A key addition for any Noctowl/Morty themed collection."},
+  {id:'c6',name:'Sage (Trainer)',set:'Astral Radiance',num:'TG12 Hoothoot Full Art',year:2022,lang:'en',rarity:'Trainer Gallery Feature',special:true,promo:false,cameo:'Sage with Hoothoot',img:'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/ASR/ASR_TG12_R_EN_SM.png',tcg:'https://www.tcgplayer.com/product/272483/pokemon-swsh10-astral-radiance-trainer-gallery-hoothoot',pc:'https://www.pricecharting.com/game/pokemon-astral-radiance/hoothoot-tg12',nmPrice:'$8–$12',note:'The Hoothoot TG12 Trainer Gallery card features a Sage NPC alongside Hoothoot. This dual Pokémon/Trainer artwork style makes it a crossover collector item.'},
+  {id:'c7',name:'Ecruteak City',set:'HeartGold & SoulSilver',num:'—',year:2010,lang:'en',rarity:'Stadium Card',special:false,promo:false,cameo:'Noctowl (implied setting)',img:null,tcg:'https://www.tcgplayer.com/search/pokemon?q=ecruteak+city',pc:null,nmPrice:'$2–$5',note:"Ecruteak City is Morty's hometown and Noctowl's canonical home. Stadium cards featuring this location are thematically tied to the Noctowl collection."},
+  {id:'c8',name:'Bill\'s Teleporter',set:'Neo Genesis',num:'91/111',year:2000,lang:'en',rarity:'Uncommon Trainer',special:false,promo:false,cameo:'Hoothoot (background)',img:null,tcg:'https://www.tcgplayer.com/search/pokemon/neo-genesis?q=bill%27s+teleporter',pc:'https://www.pricecharting.com/game/pokemon-neo-genesis/bills-teleporter-91',nmPrice:'$1–$3',note:"Neo Genesis trainer card featuring a Pokémon lab setting with Gen 2 Pokémon cameos including Hoothoot in Bill's research facility."},
+  {id:'c9',name:'Dark Ariados',set:'Neo Destiny',num:'43/105',year:2002,lang:'en',rarity:'Common',special:false,promo:false,cameo:'Hoothoot (background)',img:null,tcg:'https://www.tcgplayer.com/search/pokemon/neo-destiny?q=dark+ariados',pc:'https://www.pricecharting.com/game/pokemon-neo-destiny/dark-ariados-43',nmPrice:'$0.50',note:'Hoothoot appears as a background element in the forest night scene on this Dark Ariados card.'},
+  {id:'c10',name:'Togetic',set:'Neo Destiny',num:'20/105',year:2002,lang:'en',rarity:'Rare Holo',special:false,promo:false,cameo:'Hoothoot (background)',img:null,tcg:'https://www.tcgplayer.com/search/pokemon/neo-destiny?q=togetic',pc:'https://www.pricecharting.com/game/pokemon-neo-destiny/togetic-20',nmPrice:'$3–$8',note:'The dawn sky scene on this Togetic card features Hoothoot silhouettes in the background. Found via the comprehensive TCG cameo research database.'},
+  // Japanese exclusive cameo cards
+  {id:'c11',name:'Morty (VS Series)',set:'Pokémon VS',num:'Various',year:2001,lang:'jp',rarity:'Supporter — Japan Only',special:true,promo:false,cameo:'Noctowl',img:null,ebay:'https://www.ebay.com/search/i.html?_nkw=morty+pokemon+vs+japanese+TCG',pc:null,nmPrice:'$3–$12',note:"The Japanese VS series has multiple Morty-themed trainer cards where Noctowl is prominently featured as his signature Pokémon. Essential for JP Noctowl collectors."},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════
+var SETS = {
+  noctowl: { data: NOCTOWL, label:'🦉 Noctowl Master Set', cls:'noctowl', topVal:'$2,671 (PSA 10)', rare:8 },
+  hoothoot: { data: HOOTHOOT, label:'🐦 Hoothoot Master Set', cls:'hoothoot', topVal:'$20 (TG12)', rare:5 },
+  surfing: { data: SURFING, label:'🏄 Surfing Pikachu Master Set', cls:'surfing', topVal:'$2,500 (PSA 10)', rare:8 },
+  cameo: { data: CAMEO, label:'🎭 Cameo Cards', cls:'cameo', topVal:'Varies', rare:4 },
+};
+var KEY_PREFIX = 'owltracker-v1-';
+var currentSet = 'noctowl';
+var currentFilter = 'all';
+var searchQ = '';
+var openId = null;
+var collected = {};
+Object.keys(SETS).forEach(function(k){ collected[k] = new Set(JSON.parse(localStorage.getItem(KEY_PREFIX+k)||'[]')); });
+
+function save(){ try{localStorage.setItem(KEY_PREFIX+currentSet,JSON.stringify([...collected[currentSet]]));}catch(e){} }
+
+function switchSet(name, btn){
+  currentSet = name;
+  document.querySelectorAll('.set-tab').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  currentFilter = 'all';
+  searchQ = '';
+  openId = null;
+  document.querySelector('.search-input').value = '';
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+  document.querySelectorAll('.filter-btn')[0].classList.add('active');
+  // Update header theme
+  var s = SETS[name];
+  document.getElementById('set-title').className = 'set-title c-'+s.cls;
+  document.getElementById('set-title').textContent = s.label;
+  document.getElementById('prog-fill').className = 'prog-fill c-'+s.cls;
+  updateStats();
+  renderList();
+}
+
+function updateStats(){
+  var s = SETS[currentSet];
+  var t = s.data.length;
+  var d = collected[currentSet].size;
+  var p = t ? Math.round(d/t*100) : 0;
+  var rare = s.data.filter(function(c){return c.special||c.promo}).length;
+  document.getElementById('set-pct').textContent = p+'%';
+  document.getElementById('sp-collected').textContent = d;
+  document.getElementById('sp-needed').textContent = t-d;
+  document.getElementById('sp-total').textContent = t;
+  document.getElementById('sp-rare').textContent = rare;
+  document.getElementById('sp-val').textContent = s.topVal;
+  document.getElementById('prog-text').textContent = d+' of '+t+' collected';
+  document.getElementById('prog-fill').style.width = p+'%';
+  var msg = p===100?'Complete! 🎉':p>75?'Almost there! 🔥':p>50?'Halfway 💪':p>25?'Keep going! 🎯':'Start hunting! 🦉';
+  document.getElementById('prog-msg').textContent = msg;
+}
+
+function toggleCollected(id, e){
+  e.stopPropagation();
+  var cs = collected[currentSet];
+  cs.has(id)?cs.delete(id):cs.add(id);
+  save(); updateStats();
+  var row = document.getElementById('cr-'+id);
+  if(row){ row.classList.toggle('collected',cs.has(id)); row.querySelector('.expand-hint').textContent = cs.has(id)?'✓ Got it':'tap for info'; }
+}
+
+function toggleOpen(id){
+  var row = document.getElementById('cr-'+id);
+  if(!row) return;
+  if(openId===id){ row.classList.remove('open'); openId=null; return; }
+  if(openId){ var prev=document.getElementById('cr-'+openId); if(prev)prev.classList.remove('open'); }
+  row.classList.add('open'); openId=id;
+}
+
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  openId=null; renderList();
+}
+
+function handleSearch(q){ searchQ=q.toLowerCase(); openId=null; renderList(); }
+
+function getVisible(){
+  var cs = collected[currentSet];
+  return SETS[currentSet].data.filter(function(c){
+    if(currentFilter==='en'&&c.lang!=='en') return false;
+    if(currentFilter==='jp'&&c.lang!=='jp') return false;
+    if(currentFilter==='needed'&&cs.has(c.id)) return false;
+    if(currentFilter==='collected'&&!cs.has(c.id)) return false;
+    if(currentFilter==='rare'&&!c.special&&!c.promo) return false;
+    if(currentFilter==='promo'&&!c.promo) return false;
+    if(searchQ&&!c.name.toLowerCase().includes(searchQ)&&!c.set.toLowerCase().includes(searchQ)&&!(c.num&&c.num.toLowerCase().includes(searchQ))) return false;
+    return true;
+  });
+}
+
+function buildRow(c){
+  var cs = collected[currentSet];
+  var isColl = cs.has(c.id);
+  var isOpen = openId===c.id;
+  var imgSrc = c.img || '';
+  var imgHtml = imgSrc ? '<img class="card-img" src="'+imgSrc+'" alt="'+c.name+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">' : '';
+  var fallback = '<span class="no-img" style="display:'+(imgSrc?'none':'block')+'">'+( currentSet==='surfing'?'🏄':currentSet==='cameo'?'🎭':currentSet==='hoothoot'?'🐦':'🦉' )+'</span>';
+  var badges = '';
+  if(c.special) badges+='<span class="badge b-rare">⭐ Rare</span>';
+  if(c.promo) badges+='<span class="badge b-promo">Promo</span>';
+  if(c.lang==='jp') badges+='<span class="badge b-jp">JP</span>';
+  if(c.lang==='en') badges+='<span class="badge b-en">EN</span>';
+  if(c.name&&c.name.includes('1st')) badges+='<span class="badge b-1st">1st Ed</span>';
+  if(c.cameo) badges+='<span class="badge b-cameo">Cameo: '+c.cameo+'</span>';
+  if(c.rarity&&c.rarity.includes('VMAX')) badges+='<span class="badge b-vmax">VMAX</span>';
+
+  var buyLink = c.tcg || c.ebay || '#';
+  var buyLabel = c.tcg ? '🛒 TCGPlayer' : '🛒 eBay';
+  var pcBtn = c.pc ? '<a class="act-btn btn-pc" href="'+c.pc+'" target="_blank" onclick="event.stopPropagation()">📊 Price Guide</a>' : '<span class="act-btn btn-pc" style="opacity:0.3">No price guide</span>';
+  var buyBtn = '<a class="act-btn btn-tcg" href="'+buyLink+'" target="_blank" onclick="event.stopPropagation()">'+buyLabel+'</a>';
+  var ebayBtn = c.ebay&&c.tcg ? '<a class="act-btn btn-ebay" href="'+c.ebay+'" target="_blank" onclick="event.stopPropagation()">🟡 eBay</a>' : '';
+  var checkBtn = '<button class="act-btn btn-check" onclick="toggleCollected(\''+c.id+'\',event)">'+(isColl?'✓ Mark as Needed':'✓ Mark as Collected')+'</button>';
+
+  var detail = '<div class="card-detail">'
+    +'<div class="detail-grid">'
+    +'<div class="detail-box"><div class="d-label">NM Price</div><div class="d-val green">'+(c.nmPrice||'—')+'</div></div>'
+    +'<div class="detail-box"><div class="d-label">Year</div><div class="d-val">'+(c.year||'—')+'</div></div>'
+    +'<div class="detail-box"><div class="d-label">Rarity</div><div class="d-val" style="font-size:11px">'+(c.rarity||'—')+'</div></div>'
+    +'<div class="detail-box"><div class="d-label">Language</div><div class="d-val">'+(c.lang==='en'?'🇺🇸 English':'🇯🇵 Japanese')+'</div></div>'
+    +'</div>'
+    +'<div class="detail-note">'+(c.note||'')+'</div>'
+    +'<div class="action-grid">'+buyBtn+pcBtn+(ebayBtn||'')+checkBtn+'</div>'
+    +'</div>';
+
+  return '<div class="card-row'+(isColl?' collected':'')+(c.special?' special':'')+(isOpen?' open':'')+'" id="cr-'+c.id+'" onclick="toggleOpen(\''+c.id+'\')">'
+    +'<div class="card-inner">'
+    +'<div class="card-img-wrap">'+imgHtml+fallback+'</div>'
+    +'<div class="card-info">'
+    +'<div class="card-name">'+c.name+'</div>'
+    +'<div class="card-set">'+c.set+'</div>'
+    +'<div class="card-num">'+c.num+(c.rarity?' · '+c.rarity:'')+'</div>'
+    +'<div class="card-price">'+(c.nmPrice||'')+'</div>'
+    +'<div class="badges">'+badges+'</div>'
+    +'</div>'
+    +'<div class="card-right">'
+    +'<div class="check-ring" onclick="toggleCollected(\''+c.id+'\',event)"><span class="check-mark">✓</span></div>'
+    +'<div class="expand-hint">'+(isColl?'✓ Got it':'tap for info')+'</div>'
+    +'</div>'
+    +'</div>'
+    +detail+'</div>';
+}
+
+function renderList(){
+  var visible = getVisible();
+  var list = document.getElementById('card-list');
+  if(!visible.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">'+(currentSet==='surfing'?'🏄':currentSet==='cameo'?'🎭':'🦉')+'</div><div class="empty-text">No cards found</div><div class="empty-sub">Try a different filter</div></div>';
+    return;
+  }
+  var html='';
+  var lastLang='';
+  var showSections = (currentFilter==='all'||currentFilter==='needed'||currentFilter==='collected'||currentFilter==='rare'||currentFilter==='promo');
+  visible.forEach(function(c){
+    if(showSections && c.lang!==lastLang){
+      html+='<div class="section-lbl">'+(c.lang==='en'?'🇺🇸 English':'🇯🇵 Japanese')+'</div>';
+      lastLang=c.lang;
+    }
+    html+=buildRow(c);
+  });
+  list.innerHTML=html;
+}
+
+function markAllVisible(state){
+  var cs=collected[currentSet];
+  getVisible().forEach(function(c){ state?cs.add(c.id):cs.delete(c.id); });
+  save(); updateStats(); renderList();
+}
+
+function resetCurrent(){
+  if(!confirm('Reset all progress for this set?')) return;
+  collected[currentSet].clear(); save(); updateStats(); renderList();
+}
+
+function dismissBanner(){ document.getElementById('ib').style.display='none'; localStorage.setItem('ib-dismissed','1'); }
+
+if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)&&!localStorage.getItem('ib-dismissed')){
+  document.getElementById('ib').style.display='flex';
+}
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+
+renderList(); updateStats();
+</script>
+</body>
+</html>
