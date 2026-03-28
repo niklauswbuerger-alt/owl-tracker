@@ -252,6 +252,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:va
       <span class="tab-icon">🎭</span>
       <span class="tab-label">Cameos</span>
     </button>
+    <button class="set-tab t-add" onclick="openAddSet()" style="min-width:64px;border-left:1px solid #2a2a50">
+      <span class="tab-icon" style="font-size:24px;background:linear-gradient(135deg,#f0c040,#e060a0);-webkit-background-clip:text;-webkit-text-fill-color:transparent">+</span>
+      <span class="tab-label" style="color:#f0c040">Add Set</span>
+    </button>
   </div>
 </nav>
 
@@ -631,7 +635,230 @@ if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)&&!localStorage.getItem(
 }
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 
+// ── AI MASTER SET BUILDER ─────────────────────────────────────────
+var customSets = JSON.parse(localStorage.getItem('owltracker-custom-sets') || '{}');
+var customCollected = {};
+Object.keys(customSets).forEach(function(k){
+  customCollected[k] = new Set(JSON.parse(localStorage.getItem('owltracker-custom-collected-'+k)||'[]'));
+});
+
+function saveCustom(key){
+  localStorage.setItem('owltracker-custom-sets', JSON.stringify(customSets));
+  if(customCollected[key]) localStorage.setItem('owltracker-custom-collected-'+key, JSON.stringify([...customCollected[key]]));
+}
+
+function openAddSet(){
+  document.getElementById('add-set-modal').style.display='flex';
+  document.getElementById('ai-pokemon-input').focus();
+}
+function closeAddSet(){
+  document.getElementById('add-set-modal').style.display='none';
+  document.getElementById('ai-result').style.display='none';
+  document.getElementById('ai-pokemon-input').value='';
+  document.getElementById('ai-status').textContent='';
+}
+
+async function buildCustomSet(){
+  var pokemon = document.getElementById('ai-pokemon-input').value.trim();
+  if(!pokemon){ alert('Enter a Pokémon name!'); return; }
+
+  var btn = document.getElementById('ai-build-btn');
+  var status = document.getElementById('ai-status');
+  btn.disabled = true;
+  btn.textContent = '🔄 Researching...';
+  status.textContent = 'Searching TCG databases for all ' + pokemon + ' cards...';
+
+  var prompt = `You are a Pokemon TCG expert. Research and list EVERY Pokemon TCG card featuring "${pokemon}" as the main card name (English and Japanese). Include ALL versions: promos, special editions, trainer gallery, secret rares, theme deck variants, Japanese exclusives, everything.
+
+For EACH card return a JSON array with these exact fields:
+- id: unique string (e.g. "custom-0", "custom-1")  
+- name: exact card name
+- set: set name
+- num: card number
+- year: release year (number)
+- lang: "en" or "jp"
+- rarity: rarity string
+- special: true if rare/shiny/secret/promo variant
+- promo: true if promo card
+- nmPrice: estimated NM price range as string (e.g. "$2-$5")
+- note: 1-2 sentence collector note about this specific card
+- tcg: TCGPlayer URL if English (format: https://www.tcgplayer.com/search/pokemon/SETNAME?q=POKEMONNAME) or null
+- ebay: eBay search URL for Japanese/rare cards or null
+- pc: PriceCharting URL (format: https://www.pricecharting.com/game/pokemon-SETNAME/POKEMONNAME-NUMBER) or null
+
+Sort by: English cards first (oldest to newest), then Japanese cards (oldest to newest).
+Return ONLY the raw JSON array, no markdown, no explanation.`;
+
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    var data = await response.json();
+    var text = (data.content || []).map(function(b){ return b.type === 'text' ? b.text : ''; }).join('');
+    
+    // Parse the JSON
+    var clean = text.replace(/```json|```/g,'').trim();
+    // Find the JSON array
+    var start = clean.indexOf('[');
+    var end = clean.lastIndexOf(']');
+    if(start === -1 || end === -1) throw new Error('No JSON array found');
+    var cards = JSON.parse(clean.substring(start, end+1));
+
+    // Build the custom set
+    var key = 'custom-' + pokemon.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now();
+    var setData = {
+      key: key,
+      label: '✨ ' + pokemon.charAt(0).toUpperCase() + pokemon.slice(1) + ' Master Set',
+      pokemon: pokemon,
+      cards: cards,
+      createdAt: new Date().toISOString()
+    };
+    customSets[key] = setData;
+    customCollected[key] = new Set();
+    saveCustom(key);
+
+    // Add tab to nav
+    addCustomTab(key, setData);
+
+    status.textContent = '✅ Found ' + cards.length + ' cards! Set added to your tracker.';
+    btn.textContent = '✓ Done!';
+    setTimeout(function(){
+      closeAddSet();
+      switchToCustomSet(key);
+      btn.disabled = false;
+      btn.textContent = '🔍 Research & Build Set';
+    }, 1500);
+
+  } catch(err) {
+    status.textContent = '❌ Error: ' + err.message + '. Try again.';
+    btn.disabled = false;
+    btn.textContent = '🔍 Research & Build Set';
+  }
+}
+
+function addCustomTab(key, setData){
+  var nav = document.querySelector('.set-tabs');
+  var tab = document.createElement('button');
+  tab.className = 'set-tab t-custom';
+  tab.id = 'tab-'+key;
+  tab.innerHTML = '<span class="tab-icon">✨</span><span class="tab-label">'+setData.pokemon+'</span>';
+  tab.onclick = function(){ switchToCustomSet(key); };
+  nav.appendChild(tab);
+}
+
+function switchToCustomSet(key){
+  var setData = customSets[key];
+  if(!setData) return;
+  currentSet = key;
+  searchQ = '';
+  currentFilter = 'all';
+  openId = null;
+  document.querySelector('.search-input').value='';
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});
+  document.querySelectorAll('.filter-btn')[0].classList.add('active');
+  document.querySelectorAll('.set-tab').forEach(function(b){b.classList.remove('active')});
+  var tab = document.getElementById('tab-'+key);
+  if(tab) tab.classList.add('active');
+  document.getElementById('set-title').className = 'set-title';
+  document.getElementById('set-title').style.cssText = 'background:linear-gradient(135deg,#f0c040,#e060a0);-webkit-background-clip:text;-webkit-text-fill-color:transparent';
+  document.getElementById('set-title').textContent = setData.label;
+  document.getElementById('prog-fill').className = 'prog-fill';
+  document.getElementById('prog-fill').style.background = 'linear-gradient(90deg,#9060e0,#f0c040)';
+  document.getElementById('sp-val').textContent = '—';
+  SETS[key] = {
+    data: setData.cards,
+    label: setData.label,
+    cls: 'custom',
+    topVal: '—',
+    rare: setData.cards.filter(function(c){return c.special||c.promo}).length
+  };
+  collected[key] = customCollected[key];
+  updateStats();
+  renderList();
+}
+
+function deleteCustomSet(key){
+  if(!confirm('Delete this custom set? This cannot be undone.')) return;
+  delete customSets[key];
+  delete customCollected[key];
+  delete SETS[key];
+  delete collected[key];
+  localStorage.setItem('owltracker-custom-sets', JSON.stringify(customSets));
+  localStorage.removeItem('owltracker-custom-collected-'+key);
+  var tab = document.getElementById('tab-'+key);
+  if(tab) tab.remove();
+  switchSet('noctowl', document.querySelector('.set-tab.t-noctowl'));
+}
+
+// Restore custom sets from storage on load
+Object.keys(customSets).forEach(function(key){
+  addCustomTab(key, customSets[key]);
+  customCollected[key] = new Set(JSON.parse(localStorage.getItem('owltracker-custom-collected-'+key)||'[]'));
+  collected[key] = customCollected[key];
+});
+
 renderList(); updateStats();
+</script>
+
+<!-- ADD SET MODAL -->
+<div id="add-set-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#13131f;border:1px solid #3a3a68;border-radius:16px;width:100%;max-width:440px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1e1e38,#16162a);padding:20px 20px 16px;border-bottom:1px solid #2a2a50">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:17px;font-weight:800;background:linear-gradient(135deg,#f0c040,#e060a0);-webkit-background-clip:text;-webkit-text-fill-color:transparent">✨ Add a Master Set</div>
+        <button onclick="closeAddSet()" style="background:none;border:none;color:#5a5a80;font-size:22px;cursor:pointer;padding:0 4px">✕</button>
+      </div>
+      <div style="font-size:12px;color:#8888b0;line-height:1.5">Type any Pokémon name and AI will research every card ever printed for it — English + Japanese, promos, secret rares, everything — and add it as a new set in your tracker.</div>
+    </div>
+    <div style="padding:20px">
+      <div style="font-size:11px;font-weight:700;color:#5a5a80;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Pokémon Name</div>
+      <input id="ai-pokemon-input" type="text" placeholder="e.g. Charizard, Umbreon, Pikachu..." 
+        style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid #3a3a68;background:#0f0f1e;font-size:15px;color:#e8e8f8;outline:none;margin-bottom:8px"
+        onkeydown="if(event.key==='Enter')buildCustomSet()">
+      <div style="font-size:11px;color:#4a4a78;margin-bottom:16px">Try: Gengar · Eevee · Mewtwo · Lugia · Togepi · Morty · Giovanni</div>
+      <button id="ai-build-btn" onclick="buildCustomSet()"
+        style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#6040b0,#f0c040);color:white;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.03em">
+        🔍 Research & Build Set
+      </button>
+      <div id="ai-status" style="font-size:12px;color:#8888b0;margin-top:10px;text-align:center;min-height:18px;line-height:1.5"></div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #2a2a50">
+        <div style="font-size:10px;font-weight:700;color:#4a4a78;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Your Custom Sets</div>
+        <div id="custom-sets-list" style="display:flex;flex-direction:column;gap:6px">
+          <!-- populated by JS -->
+        </div>
+        <div id="no-custom-sets" style="font-size:12px;color:#4a4a78;text-align:center;padding:8px">No custom sets yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Update the custom sets list in the modal whenever it opens
+var _origOpenAddSet = openAddSet;
+openAddSet = function(){
+  _origOpenAddSet();
+  var list = document.getElementById('custom-sets-list');
+  var none = document.getElementById('no-custom-sets');
+  var keys = Object.keys(customSets);
+  none.style.display = keys.length ? 'none' : 'block';
+  list.innerHTML = keys.map(function(k){
+    var s = customSets[k];
+    var count = (customCollected[k]||new Set()).size;
+    var total = s.cards ? s.cards.length : 0;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:#1e1e38;border:1px solid #2a2a50;border-radius:8px;padding:8px 12px">'
+      +'<div><div style="font-size:13px;font-weight:600;color:#e8e8f8">'+s.pokemon+'</div>'
+      +'<div style="font-size:10px;color:#5a5a80">'+count+'/'+total+' collected · '+total+' cards</div></div>'
+      +'<button onclick="deleteCustomSet(\''+k+'\')" style="background:rgba(224,80,80,0.15);border:1px solid rgba(224,80,80,0.3);color:#e05050;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Delete</button>'
+      +'</div>';
+  }).join('');
+};
 </script>
 </body>
 </html>
